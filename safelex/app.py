@@ -568,7 +568,7 @@ st.markdown(f"""
 @st.fragment
 def render_dashboard():
     st.markdown("## 📊 Dashboard Home")
-    st.caption("Upload multiple documents simultaneously. Hold `Ctrl` or `Cmd` while selecting files to upload more than one at a time, or upload them sequentially.")
+    st.caption("Upload documents to your secure vault. Once uploaded, click **'Open'** on any document below to run full automated triage, view professional graphs, and chat with AI.")
 
     col_up1, col_up2 = st.columns([3, 2], vertical_alignment="center")
     with col_up1:
@@ -606,7 +606,7 @@ def render_dashboard():
         st.info("No documents uploaded yet. Drop files above to begin.")
     else:
         st.markdown("### 📄 Recent Documents in Vault")
-        for doc in user_docs[:6]:
+        for doc in user_docs:
             c1, c2, c3, c4 = st.columns([3, 2, 2, 1])
             with c1:
                 st.markdown(f"**{doc['doc_name']}**")
@@ -615,7 +615,7 @@ def render_dashboard():
             with c3:
                 st.markdown(f"📅 {doc['date']}")
             with c4:
-                if st.button("Open", key=f"dash_open_{doc['id']}", type="primary"):
+                if st.button("Open Workspace ↗", key=f"dash_open_{doc['id']}", type="primary"):
                     st.session_state["selected_doc_id"] = doc["id"]
                     st.session_state["active_tab"] = "DocumentWorkspace"
                     st.rerun()
@@ -733,6 +733,7 @@ def render_document_workspace():
                   "Medium": len([h for h in risk_hits if h["severity"] == 2]),
                   "Low": len([h for h in risk_hits if h["severity"] == 1])}
     
+    # PROFESSIONAL BOUNDED PLOTLY CHARTS
     col_chart1, col_chart2 = st.columns([1, 1], vertical_alignment="center")
     with col_chart1:
         fig_risk = px.bar(
@@ -742,18 +743,20 @@ def render_document_workspace():
             color_discrete_sequence=["#B91C1C", "#D97706", "#25836B"]
         )
         fig_risk.update_layout(
-            title_text=f"<b>Risk Exposure Score: {score}% (Severity Breakdown)</b>",
+            title_text=f"<b>Risk Exposure Score: {score}%</b>",
             showlegend=False,
             margin=dict(t=40, b=10, l=10, r=10),
             height=260,
             paper_bgcolor='rgba(0,0,0,0)',
             plot_bgcolor='rgba(0,0,0,0)',
             xaxis_title="",
-            yaxis_title="Count"
+            yaxis_title="Count",
+            yaxis=dict(range=[0, max(5, max(sev_counts.values()) + 2)], dtick=1) # Clean bounded integer ticks
         )
         st.plotly_chart(fig_risk, use_container_width=True)
 
     with col_chart2:
+        max_elem = max(len(risk_hits), len(money_list), len(timeline_list))
         fig_metrics = px.bar(
             x=["Risk Flags", "Financial Sums", "Deadlines"],
             y=[len(risk_hits), len(money_list), len(timeline_list)],
@@ -768,7 +771,8 @@ def render_document_workspace():
             paper_bgcolor='rgba(0,0,0,0)',
             plot_bgcolor='rgba(0,0,0,0)',
             xaxis_title="",
-            yaxis_title="Count"
+            yaxis_title="Count",
+            yaxis=dict(range=[0, max(5, max_elem + 2)], dtick=1) # Clean bounded integer ticks
         )
         st.plotly_chart(fig_metrics, use_container_width=True)
 
